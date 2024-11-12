@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌈 학습 서비스 🌈</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f3ff;
+            color: #555;
+        }
+        h2 {
+            text-align: center;
+            color: #8a2be2;
+            font-size: 1.8em;
+        }
+        .container {
+            max-width: 600px;
+            margin: 30px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+        }
+        label {
+            font-size: 1.1em;
+            color: #555;
+        }
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0 15px;
+            border: 1px solid #d3cce3;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+        .hidden {
+            display: none;
+        }
+        .loading {
+            color: #ff6347;
+            font-weight: bold;
+            text-align: center;
+        }
+        .spinner {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            border: 3px solid #ff6347;
+            border-top: 3px solid #f9f3ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        button {
+            padding: 12px 20px;
+            background-color: #ffd700;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            border-radius: 8px;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background-color: #ffb800;
+        }
+        .question, .result {
+            border: 2px dashed #8a2be2;
+            padding: 15px;
+            margin: 12px 0;
+            border-radius: 10px;
+            background-color: #f7f0ff;
+        }
+        .question p, .result p {
+            margin: 8px 0;
+            font-size: 1.1em;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <!-- 첫 번째 단계: User ID 입력 -->
+    <div class="container" id="step1">
+        <h2><span class="emoji">🎓</span>학습 정보 입력<span class="emoji">✏️</span></h2>
+        <label for="studentId">👤 학생 ID:</label>
+        <input type="text" id="studentId" required>
+        <button onclick="checkUserId()">학습자 확인 🚀</button>
+        <p id="loadingMessage" class="loading hidden">결과를 처리 중입니다. 잠시만 기다려 주세요...⏳ <span class="spinner"></span></p>
+    </div>
+
+    <!-- 두 번째 단계: 학습자 정보에 따른 그래프와 LLM 결과 -->
+    <div class="container hidden" id="step2">
+        <h2><span class="emoji">📊</span> 학습 보고서 확인</h2>
+        <div id="learningReport"></div>
+        <button onclick="goToGetQuestions()">문제 풀기 ➡️</button>
+    </div>
+
+    <!-- 세 번째 단계: 문제 입력 및 답변 -->
+    <div class="container hidden" id="step3">
+        <h2><span class="emoji">📝</span> 수학 문제를 풀어볼까요?</h2>
+        <label for="grade">📚 학년:</label>
+        <input type="number" id="grade" required>
+        <label for="semester">📅 학기:</label>
+        <input type="number" id="semester" required>
+        <label for="fLchapterNm">📖 대단원:</label>
+        <select id="fLchapterNm" required>
+            <option value="50까지의 수">50까지의 수</option>
+            <option value="모양과 시각">모양과 시각</option>
+            <option value="덧셈과 뺄셈">덧셈과 뺄셈</option>
+            <option value="표와 그래프">표와 그래프</option>
+        </select>
+        <button onclick="getQuestions()">문제 불러오기 📬</button>
+        <div id="questions"></div>
+        <button class="hidden" id="submitAnswersButton" onclick="submitAnswers()">답변 제출 ➡️</button>
+        <p id="answerLoadingMessage" class="loading hidden">결과를 처리 중입니다. 잠시만 기다려 주세요...⏳ <span class="spinner"></span></p>
+    </div>
+
+    <!-- 네 번째 단계: 문제 결과 확인 -->
+    <div class="container hidden" id="step4">
+        <h2><span class="emoji">✅</span> 결과를 확인해볼까요?</h2>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = "http://3.36.229.140:5000";
+
+        async function checkUserId() {
+            const studentId = document.getElementById("studentId").value;
+            if (!studentId) {
+                alert("학생 ID를 입력하세요!");
+                return;
+            }
+
+            document.getElementById('loadingMessage').classList.remove('hidden');
+            try {
+                const response = await fetch(`${API_BASE_URL}/check_user_id/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: studentId })
+                });
+                if (!response.ok) throw new Error(`HTTP 오류! 상태 코드: ${response.status}`);
+                
+                const data = await response.text();
+                document.getElementById('learningReport').innerHTML = data.replace(/\n/g, "<br>");
+                document.getElementById('step1').classList.add('hidden');
+                document.getElementById('step2').classList.remove('hidden');
+            } catch (error) {
+                alert(`학습자 ID 확인 중 오류가 발생했습니다: ${error.message}`);
+            } finally {
+                document.getElementById('loadingMessage').classList.add('hidden');
+            }
+        }
+
+        async function goToGetQuestions() {
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step3').classList.remove('hidden');
+        }
+
+        async function getQuestions() {
+            const grade = document.getElementById('grade').value;
+            const semester = document.getElementById('semester').value;
+            const fLchapterNm = document.getElementById('fLchapterNm').value;
+
+            if (!grade || !semester || !fLchapterNm) {
+                alert("학년, 학기, 대단원을 모두 입력하세요!");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/get_questions/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ grade: parseInt(grade), semester: parseInt(semester), f_lchapter_nm: fLchapterNm })
+                });
+                if (!response.ok) throw new Error(`HTTP 오류! 상태 코드: ${response.status}`);
+                
+                const data = await response.json();
+                renderQuestions(data.questions);
+                document.getElementById('submitAnswersButton').classList.remove('hidden');
+            } catch (error) {
+                alert(`문제 불러오기 중 오류가 발생했습니다: ${error.message}`);
+            }
+        }
+
+        function renderQuestions(questions) {
+            const questionsDiv = document.getElementById('questions');
+            questionsDiv.innerHTML = questions.map((q, i) => `
+                <div class="question">
+                    <p><strong>문제 ${i + 1}:</strong> ${q.Question.replace(/\n/g, "<br>")} ✨</p>
+                    <input type="text" id="answer_${q.QuizCode}" placeholder="답변을 입력해 주세요 😊">
+                </div>
+            `).join('');
+        }
+
+        async function submitAnswers() {
+            const answers = {};
+            document.querySelectorAll('#questions input').forEach(input => {
+                const quizCode = input.id.split('_')[1];
+                answers[quizCode] = input.value;
+            });
+
+            document.getElementById('answerLoadingMessage').classList.remove('hidden');
+            try {
+                const response = await fetch(`${API_BASE_URL}/submit_answers/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ answers })
+                });
+                if (!response.ok) throw new Error(`HTTP 오류! 상태 코드: ${response.status}`);
+                
+                const data = await response.text();
+                document.getElementById('results').innerHTML = `
+                    <h2>${data.includes("Radar Chart") ? "형성평가 푼 뒤 내 학습은 어떻게 바뀌었을까요?" : "이번 단원은 내가 잘 이해했을까요?"}</h2>
+                    ${data.replace(/\n/g, "<br>")}
+                `;
+
+                document.getElementById('step3').classList.add('hidden');
+                document.getElementById('step4').classList.remove('hidden');
+            } catch (error) {
+                alert(`답변 제출 중 오류가 발생했습니다: ${error.message}`);
+            } finally {
+                document.getElementById('answerLoadingMessage').classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

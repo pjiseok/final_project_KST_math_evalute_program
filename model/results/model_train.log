@@ -1,0 +1,15 @@
+Network Configuration:
+batch_size: 4
+hidden_layer_structure: [102]
+learning_rate: 0.004155923499457689
+keep_prob: 0.8656542586183774
+rnn_cell: <class 'model.LayerNormBasicLSTMCell'>
+max_grad_norm: 5.0
+lambda_w1: 0.03
+lambda_w2: 3.0
+lambda_o: 0.1
+Num of problems: 5002
+Num of runs: 1
+Max num of epochs: 1
+Keep Prob: 0.8656542586183774
+Threshold for classification: 0.7

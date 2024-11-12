@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+pandas
+SQLAlchemy
+boto3
+botocore
+pytz
+tensorflow==2.10.0
+networkx
+matplotlib
+plotly
+numpy
+openai==0.28
+python-dotenv
+aiofiles  # FastAPI 파일 응답을 위한 비동기 파일 지원
+pymysql
+pydantic
